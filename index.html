@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EDT 障礙查修進度查詢系統</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple:        #6B3FA0;
+      --purple-dark:   #4A2878;
+      --purple-light:  #EDE9FF;
+      --steel:         #2E7A9A;
+      --steel-mid:     #4A9DB8;
+      --steel-light:   #EBF5FA;
+      --bg-page:       #F4F6FA;
+      --bg-white:      #FFFFFF;
+      --border:        #DDE3EE;
+      --border-mid:    #C4CFDF;
+      --text:          #1A1F35;
+      --text-muted:    #4A5270;
+      --text-dim:      #8A93AA;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--bg-page);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      position: relative;
+      background: linear-gradient(120deg, var(--purple-dark) 0%, var(--purple) 55%, var(--steel) 100%);
+      border-bottom: 3px solid var(--steel-mid);
+      padding: 0 2rem;
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      z-index: 10;
+      box-shadow: 0 3px 16px rgba(74,40,120,0.18);
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--purple) 0%, var(--steel-mid) 100%);
+    }
+
+    .header-logo-zone {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 1.1rem 0;
+    }
+
+    .header-logo-box {
+      background: rgba(255,255,255,0.15);
+      border: 1.5px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      padding: .5rem .9rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .logo-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: .2em;
+      color: #fff;
+    }
+
+    .header-titles { display: flex; flex-direction: column; justify-content: center; }
+
+    .header-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .04em;
+    }
+
+    .header-subtitle {
+      font-size: .72rem;
+      color: rgba(255,255,255,0.65);
+      letter-spacing: .1em;
+      margin-top: .2rem;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: .8rem;
+    }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      font-size: .72rem;
+      color: rgba(255,255,255,0.75);
+      font-family: 'Share Tech Mono', monospace;
+      letter-spacing: .06em;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #4ADE80;
+      animation: blink 2.4s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: .35; }
+    }
+
+    .header-badge {
+      font-size: .68rem;
+      padding: .3rem .95rem;
+      border-radius: 20px;
+      border: 1.5px solid rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.85);
+      letter-spacing: .06em;
+      font-family: 'Share Tech Mono', monospace;
+      background: rgba(255,255,255,0.12);
+    }
+
+    /* ── MAIN ── */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 2.4rem 1.5rem 5rem;
+    }
+
+    /* ── SECTION EYEBROW ── */
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      margin-bottom: .8rem;
+    }
+    .eyebrow-line {
+      height: 1px; width: 24px;
+      background: var(--steel-mid);
+      opacity: .5;
+    }
+    .eyebrow-text {
+      font-size: .7rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--steel);
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    /* ── QUERY CARD ── */
+    .glass-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 1.4rem;
+      box-shadow: 0 2px 12px rgba(74,40,120,0.07);
+    }
+
+    .card-header {
+      padding: 1.1rem 1.6rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      background: linear-gradient(90deg, #F0EBFA 0%, #EBF5FA 100%);
+    }
+
+    .card-header-icon {
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--purple), var(--steel));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .card-header-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--purple-dark);
+      letter-spacing: .04em;
+    }
+
+    .card-header-desc {
+      font-size: .78rem;
+      color: var(--text-muted);
+      margin-top: .12rem;
+    }
+
+    .card-body { padding: 1.8rem; }
+
+    /* ── FORM ── */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: .4rem; }
+
+    .form-label {
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: .04em;
+    }
+    .form-label span { color: var(--purple); margin-left: .2rem; }
+
+    .form-input {
+      padding: .78rem 1rem;
+      border: 1.5px solid var(--border-mid);
+      border-radius: 8px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: .95rem;
+      color: var(--text);
+      background: #FAFBFE;
+      transition: border-color .18s, box-shadow .18s;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: var(--steel-mid);
+      box-shadow: 0 0 0 3px rgba(46,122,154,0.12);
+      background: #fff;
+    }
+    .form-input::placeholder { color: #B8C0D0; }
+
+    .form-hint {
+      font-size: .72rem;
+      color: var(--text-dim);
+    }
+
+    /* Privacy */
+    .privacy-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: .65rem;
+      background: #EBF5FA;
+      border: 1px solid #C5DFEC;
+      border-left: 3px solid var(--steel);
+      border-radius: 0 8px 8px 0;
+      padding: .85rem 1rem;
+      margin-bottom: 1.2rem;
+    }
+    .privacy-notice-text {
+      font-size: .78rem;
+      color: var(--steel);
+      line-height: 1.75;
+    }
+    .privacy-notice-text strong { color: var(--steel); font-weight: 700; }
+
+    /* Button */
+    .btn-query {
+      width: 100%;
+      padding: .95rem;
+      background: linear-gradient(120deg, var(--purple-dark) 0%, var(--purple) 60%, var(--steel) 100%);
+      color: #fff;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity .18s, transform .1s, box-shadow .18s;
+      box-shadow: 0 4px 16px rgba(74,40,120,0.25);
+    }
+    .btn-query:hover { opacity: .9; box-shadow: 0 6px 24px rgba(74,40,120,0.35); }
+    .btn-query:active { transform: scale(.99); }
+
+    /* ── RESULT ── */
+    #result-area { margin-top: 1.8rem; display: none; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+
+    .result-company-tag {
+      font-size: .72rem;
+      font-family: 'Share Tech Mono', monospace;
+      background: #F5F0FF;
+      color: var(--purple-dark);
+      border: 1px solid rgba(107,63,160,0.25);
+      padding: .25rem .9rem;
+      border-radius: 20px;
+      letter-spacing: .08em;
+      font-weight: 600;
+    }
+
+    /* ── CASE CARD ── */
+    .case-card {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 1.2rem;
+      box-shadow: 0 2px 10px rgba(74,40,120,0.06);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .case-card:hover {
+      border-color: var(--border-mid);
+      box-shadow: 0 4px 18px rgba(74,40,120,0.1);
+    }
+
+    .case-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: .5rem;
+      background: linear-gradient(90deg, #F5F0FF 0%, #EBF5FA 100%);
+    }
+
+    .case-customer {
+      display: flex;
+      align-items: baseline;
+      gap: .35rem;
+      margin-bottom: .3rem;
+    }
+    .customer-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--purple-dark);
+      letter-spacing: .02em;
+    }
+    .customer-branch {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--steel);
+    }
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--purple-dark);
+      letter-spacing: .08em;
+    }
+    .case-id small {
+      font-size: .7rem;
+      font-weight: 400;
+      color: var(--text-dim);
+      margin-left: .5rem;
+      font-family: 'Noto Sans TC', sans-serif;
+      letter-spacing: 0;
+    }
+
+    /* Status badges — 白底適配版 */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: .38rem;
+      font-size: .75rem;
+      font-weight: 700;
+      padding: .32rem 1rem;
+      border-radius: 20px;
+      letter-spacing: .05em;
+    }
+    .status-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .85;
+    }
+    .b-done     { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+    .b-inprog   { background: #DBEAFE; color: #1E3A8A; border: 1px solid #93C5FD; }
+    .b-remote   { background: #EDE9FE; color: #4C1D95; border: 1px solid #C4B5FD; }
+    .b-pending  { background: #FEF3C7; color: #78350F; border: 1px solid #FCD34D; }
+    .b-dispatch { background: #FFEDD5; color: #7C2D12; border: 1px solid #FDBA74; }
+
+    /* Fields grid */
+    .fields-row {
+      display: grid;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .fields-row.cols3 { grid-template-columns: repeat(3, 1fr); }
+    .fields-row.cols2 { grid-template-columns: repeat(2, 1fr); }
+
+    .cf {
+      padding: .9rem 1.4rem;
+      border-right: 1px solid var(--border);
+    }
+    .cf:last-child { border-right: none; }
+
+    .cf-label {
+      font-size: .68rem;
+      color: var(--text-dim);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: .32rem;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .cf-val {
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    /* 時間欄位 — 深色清晰可讀 */
+    .cf-val.mono {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--steel);
+      letter-spacing: .03em;
+    }
+
+    .cf-val.na {
+      font-size: .82rem;
+      color: var(--text-dim);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    /* 遠端處理方式文字 */
+    .cf-val.remote-val {
+      font-size: .9rem;
+      color: var(--purple);
+      font-weight: 600;
+    }
+
+    /* Handler type banner */
+    .handler-banner {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .7rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      font-size: .78rem;
+      font-weight: 600;
+    }
+    .report-desc-wrap {
+      padding: .9rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      background: #FAFBFE;
+    }
+    .report-desc-label {
+      font-size: .68rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .4rem;
+    }
+    .report-desc-text {
+      font-size: .9rem;
+      color: var(--text);
+      line-height: 1.85;
+    }
+
+    .handler-banner.on-site {
+      background: #FFF7ED;
+      color: #92400E;
+      border-left: 3px solid #F97316;
+    }
+    .handler-banner.remote {
+      background: #F5F3FF;
+      color: #4C1D95;
+      border-left: 3px solid var(--purple);
+    }
+    .handler-banner-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: blink 2s ease-in-out infinite;
+    }
+    .on-site .handler-banner-dot { background: #F97316; }
+    .remote  .handler-banner-dot { background: var(--purple); }
+
+    /* Progress */
+    .prog-wrap {
+      padding: 1.1rem 1.5rem 1.2rem;
+      border-bottom: 1px solid var(--border);
+      background: #F8F9FC;
+    }
+    .prog-label {
+      font-size: .68rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      margin-bottom: .85rem;
+    }
+
+    .steps { display: flex; align-items: flex-start; }
+
+    .step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: calc(50% + 12px);
+      right: calc(-50% + 12px);
+      height: 2px;
+      background: var(--border);
+      z-index: 0;
+    }
+    .step.done:not(:last-child)::after { background: var(--steel); }
+    .step.active:not(:last-child)::after {
+      background: linear-gradient(90deg, var(--steel) 0%, var(--border) 60%);
+    }
+
+    .sdot {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--border-mid);
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .62rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      position: relative; z-index: 1;
+      flex-shrink: 0;
+    }
+    .step.done .sdot {
+      background: var(--steel);
+      border-color: var(--steel);
+      color: #fff;
+    }
+    .step.active .sdot {
+      background: var(--purple);
+      border-color: var(--purple);
+      color: #fff;
+      box-shadow: 0 0 0 4px rgba(107,63,160,0.15);
+    }
+    .step.remote-active .sdot {
+      background: var(--purple);
+      border-color: var(--purple);
+      color: #fff;
+      box-shadow: 0 0 0 4px rgba(46,122,154,0.15);
+    }
+
+    .stxt {
+      font-size: .62rem;
+      color: var(--text-dim);
+      margin-top: .42rem;
+      text-align: center;
+      white-space: nowrap;
+      letter-spacing: .02em;
+    }
+    .step.done .stxt          { color: var(--steel); font-weight: 600; }
+    .step.active .stxt        { color: var(--purple); font-weight: 700; }
+    .step.remote-active .stxt { color: var(--steel); font-weight: 700; }
+
+    /* Log */
+    .log-wrap { padding: 1.1rem 1.5rem 1.3rem; }
+    .log-title {
+      font-size: .68rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      margin-bottom: .8rem;
+    }
+    .log-row {
+      display: flex;
+      gap: .85rem;
+      padding: .55rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .log-row:last-child { border-bottom: none; }
+    .log-time {
+      font-size: .72rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--steel);
+      white-space: nowrap;
+      padding-top: .06rem;
+      min-width: 120px;
+      font-weight: 600;
+    }
+    .log-note { font-size: .85rem; color: var(--text); line-height: 1.6; }
+    .log-foot {
+      font-size: .68rem;
+      color: var(--text-dim);
+      margin-top: .7rem;
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    .fields-row.cols5 { grid-template-columns: repeat(5, 1fr); }
+    .fields-row.cols4 { grid-template-columns: repeat(4, 1fr); }
+    .fields-row.cols3 { grid-template-columns: repeat(3, 1fr); }
+    .fields-row.cols2 { grid-template-columns: repeat(2, 1fr); }
+    .fields-row.cols1 { grid-template-columns: 1fr; }
+
+    .line-type-tag {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      padding: .2rem .65rem;
+      border-radius: 5px;
+      background: rgba(46,122,154,0.1);
+      color: var(--steel);
+      border: 1px solid rgba(46,122,154,0.35);
+    }
+
+    .vpn-no-tag {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      padding: .2rem .65rem;
+      border-radius: 5px;
+      background: rgba(107,63,160,0.08);
+      color: var(--purple);
+      border: 1px solid rgba(107,63,160,0.28);
+    }
+
+    /* Duration banner */
+    .duration-banner {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      padding: .95rem 1.4rem;
+      border-bottom: 1px solid var(--border);
+      background: #EBF5FA;
+      border-left: 3px solid var(--steel);
+    }
+    .duration-pending {
+      background: #F8F9FC;
+      border-left-color: var(--border-mid);
+    }
+    .dur-icon { font-size: 1.4rem; flex-shrink: 0; }
+    .dur-label {
+      display: block;
+      font-size: .63rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: .2rem;
+    }
+    .dur-value {
+      font-size: 1.2rem;
+      font-weight: 700;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--steel);
+      letter-spacing: .06em;
+    }
+    .dur-value-na {
+      font-size: .85rem;
+      color: var(--text-dim);
+      font-style: italic;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    .cf-callback {
+      background: #EBF5FA;
+    }
+    .cf-callback-pending {
+      background: #F8F9FC;
+    }
+    .cf-callback-result {
+      font-size: .9rem !important;
+      color: var(--steel) !important;
+      font-family: 'Noto Sans TC', sans-serif !important;
+      font-weight: 600 !important;
+      letter-spacing: 0 !important;
+    }
+    /* ── 客戶留言區 ── */
+    .reply-wrap {
+      padding: 1.2rem 1.5rem 1.4rem;
+      border-top: 2px dashed var(--border);
+      background: #FAFBFE;
+    }
+    .reply-section-title {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .78rem;
+      font-weight: 700;
+      color: var(--purple-dark);
+      letter-spacing: .04em;
+      margin-bottom: 1rem;
+    }
+    .reply-section-title .reply-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--purple), var(--steel));
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem;
+      flex-shrink: 0;
+    }
+
+    /* 已有留言列表 */
+    .reply-list { margin-bottom: 1.1rem; }
+    .reply-item {
+      display: flex;
+      gap: .75rem;
+      padding: .75rem 1rem;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: .6rem;
+    }
+    .reply-item:last-child { margin-bottom: 0; }
+    .reply-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple), var(--steel));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .reply-body { flex: 1; min-width: 0; }
+    .reply-meta {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      margin-bottom: .3rem;
+      flex-wrap: wrap;
+    }
+    .reply-sender {
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--purple-dark);
+    }
+    .reply-time {
+      font-size: .68rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+    }
+    .reply-new-badge {
+      font-size: .62rem;
+      background: #FEF3C7;
+      color: #78350F;
+      border: 1px solid #FCD34D;
+      padding: .1rem .5rem;
+      border-radius: 20px;
+      font-weight: 700;
+    }
+    .reply-text {
+      font-size: .88rem;
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* 輸入區 */
+    .reply-input-area {
+      background: #fff;
+      border: 1.5px solid var(--border-mid);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .reply-input-area:focus-within {
+      border-color: var(--purple);
+      box-shadow: 0 0 0 3px rgba(107,63,160,0.1);
+    }
+    .reply-textarea {
+      width: 100%;
+      padding: .9rem 1rem;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: .9rem;
+      color: var(--text);
+      border: none;
+      outline: none;
+      resize: none;
+      min-height: 88px;
+      background: transparent;
+      line-height: 1.65;
+    }
+    .reply-textarea::placeholder { color: #B8C0D0; }
+    .reply-footer-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: .55rem 1rem;
+      border-top: 1px solid var(--border);
+      background: #F8F9FC;
+    }
+    .reply-hint {
+      font-size: .7rem;
+      color: var(--text-dim);
+    }
+    .btn-reply {
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      padding: .5rem 1.2rem;
+      background: linear-gradient(120deg, var(--purple-dark), var(--purple));
+      color: #fff;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: .82rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: opacity .18s, transform .1s;
+      box-shadow: 0 3px 10px rgba(107,63,160,0.25);
+    }
+    .btn-reply:hover { opacity: .9; }
+    .btn-reply:active { transform: scale(.98); }
+    .btn-reply:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    /* ── 客服通知 Toast ── */
+    .toast-container {
+      position: fixed;
+      top: 1.2rem;
+      right: 1.2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: .6rem;
+      pointer-events: none;
+    }
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--purple);
+      border-radius: 10px;
+      padding: .95rem 1.1rem;
+      min-width: 300px;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(74,40,120,0.18);
+      pointer-events: all;
+      animation: slideIn .3s ease;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(120%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+    .toast.hiding {
+      animation: slideOut .3s ease forwards;
+    }
+    @keyframes slideOut {
+      to { transform: translateX(120%); opacity: 0; }
+    }
+    .toast-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--purple), var(--steel));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .toast-body { flex: 1; min-width: 0; }
+    .toast-title {
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--purple-dark);
+      margin-bottom: .2rem;
+    }
+    .toast-msg {
+      font-size: .78rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+    .toast-meta {
+      font-size: .68rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+      margin-top: .3rem;
+    }
+    .toast-close {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .toast-close:hover { color: var(--text); }
+
+    /* 未讀紅點 */
+    .unread-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: #EF4444;
+      border-radius: 50%;
+      margin-left: .4rem;
+      vertical-align: middle;
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    /* Email preview button & modal */
+    .btn-email-preview {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--purple);
+      background: var(--purple-light);
+      border: 1px solid rgba(107,63,160,0.25);
+      border-radius: 6px;
+      padding: .3rem .7rem;
+      cursor: pointer;
+      transition: opacity .15s;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+    .btn-email-preview:hover { opacity: .8; }
+
+    .email-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,31,53,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 1.5rem;
+    }
+    .email-modal-overlay.show { display: flex; }
+    .email-modal {
+      background: #fff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(26,31,53,0.3);
+    }
+    .email-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.1rem 1.4rem;
+      background: linear-gradient(120deg, var(--purple-dark), var(--purple), var(--steel));
+      border-radius: 14px 14px 0 0;
+    }
+    .email-modal-title {
+      font-size: .95rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: .04em;
+    }
+    .email-modal-close {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      font-size: .95rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .email-modal-body { padding: 1.4rem; }
+    .email-field-row {
+      display: flex;
+      gap: .6rem;
+      padding: .5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .82rem;
+    }
+    .email-field-row .ef-label {
+      color: var(--text-dim);
+      font-family: 'Share Tech Mono', monospace;
+      min-width: 50px;
+      flex-shrink: 0;
+    }
+    .email-field-row .ef-val { color: var(--text); font-weight: 600; }
+    .email-content-box {
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem;
+      background: #FAFBFE;
+      font-size: .88rem;
+      line-height: 1.9;
+      color: var(--text);
+    }
+    .email-content-box .ticket-highlight {
+      display: inline-block;
+      font-family: 'Share Tech Mono', monospace;
+      font-weight: 700;
+      color: var(--purple);
+      background: var(--purple-light);
+      padding: .15rem .6rem;
+      border-radius: 5px;
+      letter-spacing: .04em;
+    }
+    .email-report-desc {
+      margin-top: .4rem;
+      padding: .8rem 1rem;
+      background: #fff;
+      border: 1px dashed var(--border-mid);
+      border-radius: 6px;
+      font-size: .85rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+    .email-note {
+      margin-top: 1rem;
+      font-size: .72rem;
+      color: var(--text-dim);
+      background: #FFF7ED;
+      border: 1px solid #FDBA74;
+      border-left: 3px solid #F97316;
+      border-radius: 0 6px 6px 0;
+      padding: .7rem .9rem;
+      line-height: 1.7;
+    }
+    .email-note strong { color: #92400E; }
+
+    .state-msg {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    .state-msg-icon { font-size: 2.2rem; margin-bottom: .8rem; opacity: .6; }
+    .state-msg-title { font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: .5rem; }
+    .state-msg-desc  { font-size: .88rem; color: var(--text-muted); line-height: 1.85; }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 1.4rem;
+      font-size: .7rem;
+      font-family: 'Share Tech Mono', monospace;
+      color: var(--text-dim);
+      letter-spacing: .08em;
+      border-top: 1px solid var(--border);
+      background: var(--bg-white);
+    }
+
+    /* Responsive */
+    @media (max-width: 700px) {
+      header { padding: .8rem 1rem; flex-wrap: wrap; gap: .5rem; }
+      .form-row { grid-template-columns: 1fr; }
+      .fields-row.cols5,
+      .fields-row.cols4 { grid-template-columns: 1fr 1fr; }
+      .fields-row.cols3 { grid-template-columns: 1fr 1fr; }
+      .fields-row.cols5 .cf:nth-child(odd),
+      .fields-row.cols4 .cf:nth-child(odd) { border-right: 1px solid var(--border); }
+      .fields-row.cols5 .cf:nth-child(even),
+      .fields-row.cols4 .cf:nth-child(even) { border-right: none; }
+      .fields-row.cols5 .cf,
+      .fields-row.cols4 .cf,
+      .fields-row.cols3 .cf { border-bottom: 1px solid var(--border); }
+      .fields-row.cols2 { grid-template-columns: 1fr; }
+      .fields-row.cols2 .cf { border-right: none; border-bottom: 1px solid var(--border); }
+      .fields-row.cols2 .cf:last-child { border-bottom: none; }
+      .steps { overflow-x: auto; padding-bottom: .4rem; }
+      .stxt { font-size: .52rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, .status-dot, .handler-banner-dot { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Email Preview Modal -->
+<div id="email-modal-overlay" class="email-modal-overlay" onclick="if(event.target===this) closeEmailPreview()">
+  <div class="email-modal">
+    <div class="email-modal-header">
+      <span class="email-modal-title">&#x1F4E7; 受理通知信預覽</span>
+      <button class="email-modal-close" onclick="closeEmailPreview()" aria-label="關閉">&#x2715;</button>
+    </div>
+    <div class="email-modal-body" id="email-modal-body"></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-logo-zone">
+    <div class="header-logo-box">
+      <span class="logo-text">EDT</span>
+    </div>
+    <div class="header-titles">
+      <div class="header-title">障礙查修進度查詢</div>
+      <div class="header-subtitle">TROUBLE TICKET TRACKING SYSTEM</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="header-status">
+      <div class="status-dot"></div>
+      SYSTEM ONLINE
+    </div>
+    <div class="header-badge">免登入查詢</div>
+  </div>
+</header>
+
+<main>
+
+  <div class="eyebrow">
+    <div class="eyebrow-line"></div>
+    <span class="eyebrow-text">Query Interface</span>
+    <div class="eyebrow-line"></div>
+  </div>
+
+  <!-- Query card -->
+  <div class="glass-card">
+    <div class="card-header">
+      <div class="card-header-icon">🔍</div>
+      <div>
+        <div class="card-header-title">輸入查詢資料</div>
+        <div class="card-header-desc">請輸入您的公司編號及查修單號，即可查看案件目前進度</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="company-id">公司編號<span>*</span></label>
+          <input class="form-input" type="text" id="company-id" placeholder="例：C-2024-001" maxlength="20" autocomplete="off" spellcheck="false" />
+          <p class="form-hint">// 由本公司提供，格式 C-XXXX-XXX</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ticket-id">查修單號<span>*</span></label>
+          <input class="form-input" type="text" id="ticket-id" placeholder="例：TK-20240601-005" maxlength="25" autocomplete="off" spellcheck="false" />
+          <p class="form-hint">// 障礙受理通知所附之單號</p>
+        </div>
+      </div>
+      <div class="privacy-notice">
+        <span style="font-size:.9rem;flex-shrink:0;margin-top:.05rem;opacity:.75">🔒</span>
+        <p class="privacy-notice-text">
+          <strong>個資保護：</strong>查詢結果僅顯示案件進度與狀態，不含任何個人識別資料（姓名、電話、地址）。各公司僅可查閱自身案件，資料彼此隔離。
+        </p>
+      </div>
+      <button class="btn-query" onclick="handleQuery()">▶ 查詢查修進度</button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div id="result-area">
+    <div class="result-header">
+      <div class="eyebrow" style="margin-bottom:0">
+        <div class="eyebrow-line"></div>
+        <span class="eyebrow-text">Search Result</span>
+        <div class="eyebrow-line"></div>
+      </div>
+      <span class="result-company-tag" id="result-company-tag"></span>
+    </div>
+    <div id="result-content"></div>
+  </div>
+
+</main>
+
+<footer>
+  © EDT 資訊網路 · TROUBLE TICKET TRACKING SYSTEM · 本系統不收集個人資料 · 如有疑問請洽客服專線
+</footer>
+
+<script>
+  const DB = {
+    'C-2024-001': {
+      tickets: {
+        'TK-20240601-001': {
+          customerName: '金有錢', branch: '台中',
+          emailNotifiedAt: '2024-06-01 09:18',
+          reportDescription: '台中分店今早約 8 點 40 分起，辦公室全部電話與網路無法使用，初步檢查設備電源正常，懷疑是外部線路問題，請盡快派人處理，影響營業作業。',
+          type: '線路中斷', lineType: 'MPLS-VPN', vpnNo: '00125CM3',
+          handlerType: 'onsite',
+          reportedAt: '2024-06-01 08:42', receivedAt: '2024-06-01 09:15', eta: '2024-06-03',
+          resolvedAt: '2024-06-02 11:00', callbackAt: '2024-06-02 11:10',
+          callbackResult: '客戶確認障礙已排除，通訊恢復正常',
+          closedAt: '2024-06-02 11:20',
+          status: 'done', statusLabel: '已結案', step: 6,
+          updates: [
+            { time: '2024-06-01 09:15', note: '案件受理，已排程現場派工' },
+            { time: '2024-06-01 14:30', note: '工程師抵達現場，確認斷線位置' },
+            { time: '2024-06-02 09:10', note: '進行線路修復作業' },
+            { time: '2024-06-02 11:00', note: '線路修復完成，通訊恢復正常' },
+            { time: '2024-06-02 11:10', note: '回訪客戶確認：障礙已排除，客戶表示正常使用' },
+            { time: '2024-06-02 11:20', note: '客戶確認無誤，案件結案' },
+          ]
+        },
+        'TK-20240601-005': {
+          customerName: '金有錢', branch: '台北總部',
+          emailNotifiedAt: '2024-06-01 15:03',
+          reportDescription: '網路連線速度時快時慢，影像會議常常斷線，重開機後仍未改善，已持續約一小時。',
+          type: '訊號異常', lineType: 'ADSL-VPN', vpnNo: '00287AX1',
+          handlerType: 'remote',
+          reportedAt: '2024-06-01 14:22', receivedAt: '2024-06-01 15:00', eta: '2024-06-04',
+          resolvedAt: null, callbackAt: null, callbackResult: null, closedAt: null,
+          status: 'remote', statusLabel: '遠端工程師處理中', step: 3,
+          updates: [
+            { time: '2024-06-01 15:00', note: '案件受理，確認可遠端處理' },
+            { time: '2024-06-01 16:20', note: '遠端工程師已接入，開始診斷訊號異常' },
+            { time: '2024-06-02 09:30', note: '遠端持續排查中，已縮小問題範圍' },
+          ]
+        }
+      }
+    },
+    'C-2024-002': {
+      tickets: {
+        'TK-20240602-003': {
+          customerName: '大發科技', branch: '高雄',
+          emailNotifiedAt: null,
+          reportDescription: 'SD-WAN 設備面板顯示紅燈閃爍，連線狀態指示燈異常，現場人員嘗試重啟設備無效，請協助派工檢修。',
+          type: '設備故障', lineType: 'SD-WAN', vpnNo: '00341BK9',
+          handlerType: 'onsite',
+          reportedAt: '2024-06-02 09:38', receivedAt: '2024-06-02 10:00', eta: '2024-06-05',
+          resolvedAt: null, callbackAt: null, callbackResult: null, closedAt: null,
+          status: 'dispatch', statusLabel: '派工處理中', step: 2,
+          updates: [
+            { time: '2024-06-02 10:00', note: '案件受理，確認需現場派工' },
+            { time: '2024-06-02 11:30', note: '工程師已排程，預計今日抵達' },
+          ]
+        },
+        'TK-20240603-007': {
+          customerName: '大發科技', branch: '台南分公司',
+          emailNotifiedAt: '2024-06-03 08:12',
+          reportDescription: '今日上班後發現整個辦公室無法連上外部網路，內部區域網路正常，路由器指示燈正常亮綠燈，請協助確認問題。',
+          type: '網路中斷', lineType: 'MPLS-VPN', vpnNo: '00125CM3',
+          handlerType: 'remote',
+          reportedAt: '2024-06-03 07:55', receivedAt: '2024-06-03 08:10', eta: '2024-06-03',
+          resolvedAt: '2024-06-03 10:30', callbackAt: '2024-06-03 10:38',
+          callbackResult: '客戶確認網路恢復正常，可正常存取所有服務',
+          closedAt: '2024-06-03 10:45',
+          status: 'done', statusLabel: '已結案', step: 6,
+          updates: [
+            { time: '2024-06-03 08:10', note: '案件受理，確認遠端可處理' },
+            { time: '2024-06-03 08:35', note: '遠端工程師接入，確認路由設定異常' },
+            { time: '2024-06-03 09:50', note: '已完成路由設定修正，測試中' },
+            { time: '2024-06-03 10:30', note: '網路恢復正常，遠端確認完畢' },
+            { time: '2024-06-03 10:38', note: '回訪客戶確認：障礙已排除，客戶表示網路正常' },
+            { time: '2024-06-03 10:45', note: '客戶確認無誤，案件結案' },
+          ]
+        }
+      }
+    }
+  };
+
+  const STEPS_ONSITE = ['案件受理','排程派工','現場處理','測試確認','客戶回訪確認','案件結案'];
+  const STEPS_REMOTE = ['案件受理','遠端接入','遠端處理','測試確認','客戶回訪確認','案件結案'];
+
+  // ── 留言儲存 ──
+  function getReplies(tid) {
+    try { return JSON.parse(localStorage.getItem('edt_replies_' + tid) || '[]'); } catch { return []; }
+  }
+  function saveReplies(tid, list) {
+    try { localStorage.setItem('edt_replies_' + tid, JSON.stringify(list)); } catch {}
+  }
+
+  function renderReplies(tid) {
+    const list = getReplies(tid);
+    const el  = document.getElementById('reply-list-' + tid);
+    const dot = document.getElementById('unread-dot-' + tid);
+    if (!el) return;
+    if (list.length === 0) {
+      el.innerHTML = '<p style="font-size:.8rem;color:var(--text-dim);padding:.4rem 0 .6rem;font-style:italic;">尚無留言，有任何問題歡迎留言。</p>';
+      if (dot) dot.style.display = 'none';
+      return;
+    }
+    const hasUnread = list.some(function(r){ return r.unread; });
+    if (dot) dot.style.display = hasUnread ? 'inline' : 'none';
+    el.innerHTML = list.map(function(r) {
+      return '<div class="reply-item">' +
+        '<div class="reply-avatar">' + r.sender.charAt(0) + '</div>' +
+        '<div class="reply-body">' +
+          '<div class="reply-meta">' +
+            '<span class="reply-sender">' + r.sender + '</span>' +
+            '<span class="reply-time">' + r.time + '</span>' +
+            (r.unread ? '<span class="reply-new-badge">NEW</span>' : '') +
+          '</div>' +
+          '<div class="reply-text">' + r.text + '</div>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  function submitReply(tid) {
+    var input = document.getElementById('reply-input-' + tid);
+    var btn   = document.getElementById('reply-btn-'   + tid);
+    if (!input || !btn) return;
+    var text = input.value.trim();
+    if (!text) { input.focus(); return; }
+    btn.disabled = true;
+    btn.textContent = '送出中...';
+    setTimeout(function() {
+      var now = new Date();
+      var pad = function(n){ return String(n).padStart(2,'0'); };
+      var timeStr = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) +
+                    ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+      var reply = { id: Date.now(), sender: '客戶留言', time: timeStr, text: text, unread: true };
+      var list = getReplies(tid);
+      list.push(reply);
+      saveReplies(tid, list);
+      input.value = '';
+      btn.disabled = false;
+      btn.innerHTML = '&#x2709; 送出留言';
+      renderReplies(tid);
+      showNotification(tid, text, timeStr);
+    }, 600);
+  }
+
+  // ── 通知 Toast ──
+  function showNotification(tid, msgPreview, timeStr) {
+    var container = document.getElementById('toast-container');
+    var preview = msgPreview.length > 35 ? msgPreview.slice(0,35) + '...' : msgPreview;
+    var toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML =
+      '<div class="toast-icon">&#x1F514;</div>' +
+      '<div class="toast-body">' +
+        '<div class="toast-title">&#x26A1; 客戶留言通知 &mdash; 請立即查看</div>' +
+        '<div class="toast-msg">查修單 <strong>' + tid + '</strong> 收到新留言</div>' +
+        '<div class="toast-msg" style="margin-top:.25rem;color:var(--text);">&ldquo;' + preview + '&rdquo;</div>' +
+        '<div class="toast-meta">' + timeStr + ' &middot; 請客服人員盡快回覆</div>' +
+      '</div>' +
+      '<button class="toast-close" onclick="dismissToast(this)" aria-label="關閉">&#x2715;</button>';
+    container.appendChild(toast);
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
+    } catch(e) {}
+    setTimeout(function(){ dismissToast(toast.querySelector('.toast-close')); }, 8000);
+  }
+
+  function dismissToast(btn) {
+    var toast = btn.closest('.toast');
+    if (!toast) return;
+    toast.classList.add('hiding');
+    setTimeout(function(){ if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+  }
+
+  // ── 受理通知信預覽 ──
+  function findTicket(tid) {
+    for (var cid in DB) {
+      if (DB[cid].tickets[tid]) return DB[cid].tickets[tid];
+    }
+    return null;
+  }
+
+  function showEmailPreview(tid) {
+    var t = findTicket(tid);
+    if (!t) return;
+    var body = document.getElementById('email-modal-body');
+    body.innerHTML =
+      '<div class="email-field-row"><span class="ef-label">收件人</span><span class="ef-val">' + t.customerName + '（' + t.branch + '）客戶聯絡信箱</span></div>' +
+      '<div class="email-field-row"><span class="ef-label">主旨</span><span class="ef-val">【EDT 障礙受理通知】查修單號 ' + tid + ' 已成立</span></div>' +
+      '<div class="email-field-row"><span class="ef-label">發送時間</span><span class="ef-val">' + t.emailNotifiedAt + '</span></div>' +
+      '<div class="email-content-box">' +
+        '親愛的客戶您好，<br><br>' +
+        '我們已收到您的障礙報修申請，相關資訊如下：<br><br>' +
+        '查修單號：<span class="ticket-highlight">' + tid + '</span><br>' +
+        '障礙類型：' + t.type + '<br>' +
+        '線路類型：' + (t.lineType || '—') + '<br>' +
+        '受理時間：' + t.receivedAt + '<br>' +
+        '處理方式：' + (t.handlerType === 'remote' ? '遠端工程師處理' : '現場派工處理') + '<br><br>' +
+        '<strong>客戶報修內容：</strong><br>' +
+        '<div class="email-report-desc">' + (t.reportDescription || '（無填寫說明）') + '</div><br>' +
+        '您可隨時透過障礙查修進度查詢系統，輸入公司編號與上方查修單號查看最新處理進度。<br><br>' +
+        '若有任何問題，歡迎於系統內留言或致電客服專線。<br><br>' +
+        'EDT 資訊網路 客服團隊' +
+      '</div>' +
+      '<div class="email-note"><strong>備註：</strong>本頁為信件內容預覽。實際自動發信功能須串接後端寄信服務（如 SMTP / SendGrid / AWS SES），於「系統受理」當下觸發寄送，並將寄送結果回填至「受理通知信時間」欄位。</div>';
+    document.getElementById('email-modal-overlay').classList.add('show');
+  }
+
+  function closeEmailPreview() {
+    document.getElementById('email-modal-overlay').classList.remove('show');
+  }
+
+
+  // ── 查詢主流程 ──
+  function handleQuery() {
+    var cid = document.getElementById('company-id').value.trim().toUpperCase();
+    var tid = document.getElementById('ticket-id').value.trim().toUpperCase();
+    var area    = document.getElementById('result-area');
+    var content = document.getElementById('result-content');
+    var tag     = document.getElementById('result-company-tag');
+
+    area.style.display = 'block';
+    setTimeout(function(){ area.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60);
+
+    if (!cid || !tid) {
+      content.innerHTML = stateMsg('⚠', '欄位未填寫', '請輸入公司編號及查修單號後再查詢。');
+      tag.textContent = '';
+      return;
+    }
+    var co = DB[cid];
+    if (!co) {
+      content.innerHTML = stateMsg('◎', '找不到此公司編號', '查無「' + cid + '」的相關紀錄。請確認編號是否正確，或聯繫 EDT 客服協助。');
+      tag.textContent = '';
+      return;
+    }
+    var tk = co.tickets[tid];
+    if (!tk) {
+      content.innerHTML = stateMsg('◈', '查無此查修單號', '公司「' + cid + '」下找不到查修單「' + tid + '」。請確認單號是否正確。');
+      tag.textContent = '// ' + cid;
+      return;
+    }
+    tag.textContent = '// COMPANY: ' + cid;
+    content.innerHTML = renderTicket(tid, tk);
+    renderReplies(tid);
+  }
+
+  function renderTicket(id, t) {
+    var badgeCls = { done:'b-done', inprogress:'b-inprog', remote:'b-remote', pending:'b-pending', dispatch:'b-dispatch' };
+    var steps = t.handlerType === 'remote' ? STEPS_REMOTE : STEPS_ONSITE;
+
+    var bannerHtml = t.handlerType === 'remote'
+      ? '<div class="handler-banner remote"><div class="handler-banner-dot"></div>遠端工程師處理 &mdash; 無需現場派工，技術人員透過遠端連線診斷與修復</div>'
+      : '<div class="handler-banner on-site"><div class="handler-banner-dot"></div>現場派工處理 &mdash; 技術工程師將親赴現場進行檢修</div>';
+
+    var stepsHtml = steps.map(function(s, i) {
+      var n = i + 1;
+      var cls = n < t.step ? 'done' : (n === t.step ? (t.handlerType === 'remote' && t.status !== 'done' ? 'remote-active' : 'active') : '');
+      var ico = n < t.step ? '&#x2713;' : n.toString();
+      return '<div class="step ' + cls + '"><div class="sdot">' + ico + '</div><div class="stxt">' + s + '</div></div>';
+    }).join('');
+
+    function calcDuration(from, to) {
+      if (!from || !to) return null;
+      var diff = new Date(to.replace(' ','T')) - new Date(from.replace(' ','T'));
+      if (diff <= 0) return null;
+      var totalMins = Math.floor(diff / 60000);
+      var days = Math.floor(totalMins / 1440);
+      var hrs  = Math.floor((totalMins % 1440) / 60);
+      var mins = totalMins % 60;
+      var parts = [];
+      if (days > 0) parts.push(days + ' 天');
+      if (hrs  > 0) parts.push(hrs  + ' 小時');
+      if (mins > 0) parts.push(mins + ' 分鐘');
+      return parts.length ? parts.join(' ') : '不到 1 分鐘';
+    }
+
+    var duration = calcDuration(t.reportedAt, t.resolvedAt);
+    var durationHtml = duration
+      ? '<div class="duration-banner"><span class="dur-icon">&#x23F1;</span><div><span class="dur-label">障礙總時長（報修 → 修復完成）</span><span class="dur-value">' + duration + '</span></div></div>'
+      : '<div class="duration-banner duration-pending"><span class="dur-icon">&#x23F3;</span><div><span class="dur-label">障礙總時長（報修 → 修復完成）</span><span class="dur-value-na">修復完成後自動計算</span></div></div>';
+
+    var resolvedHtml = t.resolvedAt ? '<span class="cf-val mono">' + t.resolvedAt + '</span>' : '<span class="cf-val na">— 尚未完成修復</span>';
+    var callbackHtml = t.callbackAt ? '<span class="cf-val mono">' + t.callbackAt + '</span>' : '<span class="cf-val na">— 待回訪客戶確認</span>';
+    var closedHtml   = t.closedAt   ? '<span class="cf-val mono">' + t.closedAt   + '</span>' : '<span class="cf-val na">— 尚未結案</span>';
+
+    var callbackBlockHtml = t.callbackAt
+      ? '<div class="fields-row cols1"><div class="cf cf-callback"><div class="cf-label">&#x1F4DE; 客戶回訪確認結果</div><div class="cf-val cf-callback-result">' + t.callbackResult + '</div></div></div>'
+      : '<div class="fields-row cols1"><div class="cf cf-callback-pending"><div class="cf-label">&#x1F4DE; 客戶回訪確認結果</div><div class="cf-val na">— 修復完成後將電話回訪客戶，確認障礙排除後結案</div></div></div>';
+
+    var emailHtml = t.emailNotifiedAt
+      ? '<span class="cf-val mono">' + t.emailNotifiedAt + '</span>'
+      : '<span class="cf-val na">— 尚未發送</span>';
+
+    var emailPreviewBtn = '<button class="btn-email-preview" onclick="showEmailPreview(\'' + id + '\')">&#x1F4E7; 查看通知信內容</button>';
+
+    var logHtml = t.updates.slice().reverse().map(function(u){
+      return '<div class="log-row"><span class="log-time">' + u.time + '</span><span class="log-note">' + u.note + '</span></div>';
+    }).join('');
+
+    return '<div class="case-card">' +
+      '<div class="case-top">' +
+        '<div>' +
+          '<div class="case-customer">' +
+            '<span class="customer-name">' + (t.customerName || '—') + '</span>' +
+            '<span class="customer-branch">(' + (t.branch || '—') + ')</span>' +
+          '</div>' +
+          '<div class="case-id">' + id + '<small>查修單號</small></div>' +
+        '</div>' +
+        '<span class="status-badge ' + (badgeCls[t.status] || 'b-pending') + '">' + t.statusLabel + '</span>' +
+      '</div>' +
+      bannerHtml +
+      '<div class="report-desc-wrap">' +
+        '<div class="report-desc-label">&#x1F4DD; 客戶報修內容</div>' +
+        '<div class="report-desc-text">' + (t.reportDescription || '（客戶未填寫詳細說明）') + '</div>' +
+      '</div>' +
+      '<div class="fields-row cols5">' +
+        '<div class="cf"><div class="cf-label">障礙類型</div><div class="cf-val">' + t.type + '</div></div>' +
+        '<div class="cf"><div class="cf-label">線路類型</div><div class="cf-val"><span class="line-type-tag">' + (t.lineType||'—') + '</span></div></div>' +
+        '<div class="cf"><div class="cf-label">VPN 編號</div><div class="cf-val"><span class="vpn-no-tag">' + (t.vpnNo ? '-'+t.vpnNo : '—') + '</span></div></div>' +
+        '<div class="cf"><div class="cf-label">預計完成</div><div class="cf-val">' + t.eta + '</div></div>' +
+        '<div class="cf"><div class="cf-label">處理方式</div><div class="cf-val ' + (t.handlerType==='remote'?'remote-val':'') + '">' + (t.handlerType==='remote'?'&#x1F6F0; 遠端處理':'&#x1F527; 現場派工') + '</div></div>' +
+      '</div>' +
+      '<div class="fields-row cols3">' +
+        '<div class="cf"><div class="cf-label">&#x1F4C5; 客戶報修時間</div><span class="cf-val mono">' + t.reportedAt + '</span></div>' +
+        '<div class="cf"><div class="cf-label">&#x1F4CB; 系統受理時間</div><span class="cf-val mono">' + t.receivedAt + '</span></div>' +
+        '<div class="cf"><div class="cf-label">&#x1F4E7; 受理通知信時間</div>' + emailHtml + (t.emailNotifiedAt ? '<div style="margin-top:.4rem">' + emailPreviewBtn + '</div>' : '') + '</div>' +
+      '</div>' +
+      '<div class="fields-row cols3">' +
+        '<div class="cf"><div class="cf-label">&#x1F527; 實際修復時間</div>' + resolvedHtml + '</div>' +
+        '<div class="cf"><div class="cf-label">&#x1F4DE; 客戶回訪時間</div>' + callbackHtml + '</div>' +
+        '<div class="cf"><div class="cf-label">&#x2705; 案件結案時間</div>' + closedHtml + '</div>' +
+      '</div>' +
+      callbackBlockHtml +
+      durationHtml +
+      '<div class="prog-wrap"><div class="prog-label">Processing Pipeline</div><div class="steps">' + stepsHtml + '</div></div>' +
+      '<div class="log-wrap"><div class="log-title">Event Log</div>' + logHtml + '<div class="log-foot">// ' + t.updates.length + ' records &middot; no personal data exposed</div></div>' +
+      '<div class="reply-wrap" id="reply-wrap-' + id + '">' +
+        '<div class="reply-section-title"><div class="reply-icon">&#x1F4AC;</div><span>案件留言</span><span id="unread-dot-' + id + '" style="display:none"><span class="unread-dot"></span></span></div>' +
+        '<div class="reply-list" id="reply-list-' + id + '"></div>' +
+        '<div class="reply-input-area">' +
+          '<textarea class="reply-textarea" id="reply-input-' + id + '" placeholder="對本案件有任何疑問或補充說明，請在此輸入留言，客服人員將盡快回覆您。" rows="3"></textarea>' +
+          '<div class="reply-footer-bar">' +
+            '<span class="reply-hint">&#x1F512; 留言僅限本案件當事公司查看</span>' +
+            '<button class="btn-reply" id="reply-btn-' + id + '" onclick="submitReply(\'' + id + '\')">&#x2709; 送出留言</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function stateMsg(icon, title, desc) {
+    return '<div class="glass-card"><div class="state-msg"><div class="state-msg-icon">' + icon + '</div><div class="state-msg-title">' + title + '</div><p class="state-msg-desc">' + desc + '</p></div></div>';
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') handleQuery();
+    if (e.key === 'Escape') closeEmailPreview();
+  });
+</script>
+</body>
+</html>
